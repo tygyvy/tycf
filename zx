@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中 → 英 翻译</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #1c1c20;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 16px;
+  }
+  .card {
+    width: 100%;
+    max-width: 460px;
+    background: #24242a;
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+  h1 {
+    color: #fff;
+    font-size: 18px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  textarea, .output {
+    width: 100%;
+    border: none;
+    border-radius: 10px;
+    background: #33333b;
+    color: #fff;
+    font-size: 15px;
+    padding: 12px;
+    resize: vertical;
+    outline: none;
+  }
+  textarea { min-height: 90px; }
+  textarea::placeholder { color: #888; }
+  .output {
+    min-height: 90px;
+    color: #7ee07e;
+    margin-top: 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .output:empty::before {
+    content: attr(data-placeholder);
+    color: #888;
+  }
+  .row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  button {
+    flex: 1;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  button:active { opacity: .7; }
+  #genBtn { background: #5078ff; }
+  #copyBtn { background: #3ca05a; }
+  #clearBtn { background: #7a4040; }
+  .status {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #ffc878;
+    min-height: 16px;
+    text-align: left;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>中 → 英 翻译</h1>
+    <textarea id="input" placeholder="在这里输入中文…"></textarea>
+    <div class="row">
+      <button id="genBtn">生成</button>
+      <button id="clearBtn">清空</button>
+    </div>
+    <div id="output" class="output" data-placeholder="英文结果会显示在这里…"></div>
+    <button id="copyBtn" style="margin-top:12px;width:100%;">复制英文</button>
+    <div id="status" class="status"></div>
+  </div>
+
+<script>
+const inputEl = document.getElementById('input');
+const outputEl = document.getElementById('output');
+const genBtn = document.getElementById('genBtn');
+const copyBtn = document.getElementById('copyBtn');
+const clearBtn = document.getElementById('clearBtn');
+const statusEl = document.getElementById('status');
+
+async function translate(text) {
+  const url = 'https://translate.googleapis.com/translate_a/single?client=gtx&sl=zh-CN&tl=en&dt=t&q='
+    + encodeURIComponent(text);
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('请求失败：' + res.status);
+  const data = await res.json();
+  if (!data || !data[0]) throw new Error('解析失败');
+  return data[0].map(p => p[0]).join('');
+}
+
+genBtn.addEventListener('click', async () => {
+  const text = inputEl.value.trim();
+  if (!text) {
+    statusEl.textContent = '请先输入中文';
+    outputEl.textContent = '';
+    return;
+  }
+  outputEl.textContent = '';
+  statusEl.textContent = '生成中…';
+  genBtn.disabled = true;
+  try {
+    const result = await translate(text);
+    outputEl.textContent = result;
+    statusEl.textContent = '翻译成功';
+  } catch (e) {
+    statusEl.textContent = '生成失败：' + e.message;
+  } finally {
+    genBtn.disabled = false;
+  }
+});
+
+copyBtn.addEventListener('click', async () => {
+  const text = outputEl.textContent;
+  if (!text) {
+    statusEl.textContent = '没有可复制的内容';
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    copyBtn.textContent = '已复制';
+    setTimeout(() => copyBtn.textContent = '复制英文', 1200);
+  } catch {
+    statusEl.textContent = '复制失败，请手动选中复制';
+  }
+});
+
+clearBtn.addEventListener('click', () => {
+  inputEl.value = '';
+  outputEl.textContent = '';
+  statusEl.textContent = '';
+});
+</script>
+</body>
+</html>
